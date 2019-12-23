@@ -1,0 +1,54 @@
+{
+	"name": "quick-developing-vscode",
+	"displayName": "Quick Developing",
+	"description": "1415926535",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.0.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:extension.quick.developing.connect"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.quick.developing.connect",
+				"title": "Open connection",
+				"category": "Quick"
+			},
+			{
+				"command": "extension.quick.developing.disconnect",
+				"title": "Close connection",
+				"category": "Quick"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^5.2.7",
+		"@types/node": "^12.11.7",
+		"@types/vscode": "^1.0.0",
+		"glob": "^7.1.5",
+		"mocha": "^6.2.2",
+		"typescript": "^3.6.4",
+		"tslint": "^5.20.0",
+		"vscode-test": "^1.2.2"
+	},
+	"dependencies": {
+		"@types/string-similarity": "^3.0.0",
+		"@types/ws": "^6.0.4",
+		"string-similarity": "^3.0.0",
+		"ws": "^7.2.1"
+	}
+}
