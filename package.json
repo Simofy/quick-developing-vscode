@@ -1,11 +1,17 @@
 {
 	"name": "quick-developing-vscode",
 	"displayName": "Quick Developing",
-	"description": "1415926535",
+	"description": "An extension for \"Quick Developing\" system",
 	"version": "0.0.1",
+	
 	"engines": {
 		"vscode": "^1.0.0"
 	},
+	"author": {
+		"email": "julius.simutis@gmail.com",
+		"name": "Julius Simas Simutis",
+		"url": "https://simofy.github.io/"
+	 },  
 	"categories": [
 		"Other"
 	],
@@ -46,8 +52,11 @@
 		"vscode-test": "^1.2.2"
 	},
 	"dependencies": {
+		"@types/parse5": "^5.0.2",
 		"@types/string-similarity": "^3.0.0",
 		"@types/ws": "^6.0.4",
+		"hyntax": "^1.1.2",
+		"parse5": "^5.1.1",
 		"string-similarity": "^3.0.0",
 		"ws": "^7.2.1"
 	}
