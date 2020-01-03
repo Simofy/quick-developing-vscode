@@ -2,6 +2,7 @@
 	"name": "quick-developing-vscode",
 	"displayName": "Quick Developing",
 	"description": "An extension for \"Quick Developing\" system",
+	"publisher": "Simutis",
 	"version": "0.0.1",
 	
 	"engines": {

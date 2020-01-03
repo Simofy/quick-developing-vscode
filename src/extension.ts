@@ -6,7 +6,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand('extension.quick.developing.connect', () => {
 		quickDeveloping.connect()
-		vscode.window.showInformationMessage('Hello World!');
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('extension.quick.developing.disconnect', () => {
