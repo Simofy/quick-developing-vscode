@@ -16,6 +16,9 @@
 	"categories": [
 		"Other"
 	],
+	"repository": {
+		"url": "https://github.com/Simofy/quick-developing-vscode"
+	},
 	"activationEvents": [
 		"onCommand:extension.quick.developing.connect"
 	],

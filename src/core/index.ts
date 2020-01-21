@@ -5,38 +5,7 @@ import { TextDecoder } from 'util';
 import { compareTwoStrings } from 'string-similarity'
 import { MessageChannel } from 'worker_threads';
 import { parse } from 'parse5';
-export enum MESSAGE_TYPE {
-   CSS_FILE_MODIFIED = "CSS_FILE_MODIFIED",
-   ATTRIBUTE_MODIFIED = "ATTRIBUTE_MODIFIED",
-   ELEMENT_EDIT = "ELEMENT_EDIT",
-   TERMINATE = "TERMINATE",
-   LOAD_FILE = "LOAD_FILE",
-}
-
-export type WS_MESSAGE<T extends MESSAGE_TYPE> = {
-   type: MESSAGE_TYPE,
-   data: WS_RESPONSE[T],
-}
-
-export type WS_RESPONSE = {
-   [MESSAGE_TYPE.CSS_FILE_MODIFIED]: {
-      url: string,
-      content: string,
-   },
-   [MESSAGE_TYPE.ELEMENT_EDIT]: {
-   },
-   [MESSAGE_TYPE.TERMINATE]: string,
-   [MESSAGE_TYPE.LOAD_FILE]: {
-      url: string,
-      content: string,
-   },
-   [MESSAGE_TYPE.ATTRIBUTE_MODIFIED]: {
-      path: Array<number>,
-      value: string,
-      name: string,
-      id: string, nodeName: string,
-   }
-}
+import { MESSAGE_TYPE, MESSAGE_DATA, MESSAGE } from '../const';
 
 export default class QuickDeveloping {
    ws?: WebSocket.Server;
@@ -62,12 +31,11 @@ export default class QuickDeveloping {
          console.log(folders)
       }
    }
-   async loadWorkingFile(data: WS_RESPONSE[MESSAGE_TYPE.LOAD_FILE]) {
+   async loadWorkingFile(data: MESSAGE_DATA[MESSAGE_TYPE.LOAD_FILE]) {
       const { fs } = vscode.workspace
       if (data.url) {
+         console.log(data.url)
          const loadedFile = this.initiatedFiles.get(data.url)
-         console.log(loadedFile)
-
          if (!loadedFile) {
             const fileToFind = data.url.split('/').pop()
             const searchResult = await vscode.workspace.findFiles(`**/${fileToFind}`)
@@ -76,7 +44,7 @@ export default class QuickDeveloping {
             for (let i = 0; i < searchResult.length; i++) {
                const file = searchResult[i]
                const stream = await fs.readFile(file)
-               var string = new TextDecoder("utf-8").decode(stream)
+               let string = new TextDecoder("utf-8").decode(stream)
                if (string == data.content) {
                   this.initiatedFiles.set(data.url, {
                      file,
@@ -108,7 +76,7 @@ export default class QuickDeveloping {
                }
             } else {
                throw 2
-               // no matching file
+               // no matching file 
             }
          } else {
             return loadedFile.file
@@ -119,28 +87,31 @@ export default class QuickDeveloping {
       }
    }
    handleMessage(message: WebSocket.Data) {
-      const response = JSON.parse(message.toString()) as WS_MESSAGE<any>
+      const response = JSON.parse(message.toString()) as MESSAGE<any>
       const { data } = response
       switch (response.type) {
-         case MESSAGE_TYPE.CSS_FILE_MODIFIED:
+         case MESSAGE_TYPE.CSS_FILE_MODIFIED: {
             this.handleCSSFileModified(data)
             break;
-         case MESSAGE_TYPE.TERMINATE:
-            const message = JSON.parse(data);
-            if (message.code == "TERMINATE") {
-               if (this.wsHandler) {
-                  this.wsHandler.send(message.token)
-               }
-               this.disconnect()
+         }
+         case MESSAGE_TYPE.TERMINATE: {
+            if (this.wsHandler) {
+               this.wsHandler.send(data)
             }
+            this.disconnect()
             break;
-         case MESSAGE_TYPE.ATTRIBUTE_MODIFIED:
+         }
+         case MESSAGE_TYPE.SET_PORT_FOR_NEW: {
+            break;
+         }
+         case MESSAGE_TYPE.ATTRIBUTE_MODIFIED: {
             this.handleAttributeModified(data)
             break;
-         case MESSAGE_TYPE.LOAD_FILE:
+         }
+         case MESSAGE_TYPE.LOAD_FILE: {
             this.loadWorkingFile(data).catch(e => console.log(e))
             break;
-
+         }
          default:
             break;
       }
@@ -149,27 +120,22 @@ export default class QuickDeveloping {
       file: vscode.Uri,
       stem: string,
    }>
-   handleAttributeModified(data: WS_RESPONSE[MESSAGE_TYPE.ATTRIBUTE_MODIFIED]) {
+   handleAttributeModified(data: MESSAGE_DATA[MESSAGE_TYPE.ATTRIBUTE_MODIFIED]) {
       const { name, path, value, ...check } = data
    }
-   handleFileEdit(data: WS_RESPONSE[MESSAGE_TYPE.CSS_FILE_MODIFIED], file?: vscode.Uri) {
-      if(!file){
+   handleFileEdit(data: MESSAGE_DATA[MESSAGE_TYPE.CSS_FILE_MODIFIED], file?: vscode.Uri) {
+      if (!file) {
+         //gauname failo nuorodą iš ryšių lentelės
          file = this.initiatedFiles.get(data.url)?.file
       }
-      // if (!this.initiatedFiles.has(data.url) && file) {
-
-      // } else {
-      //    const _file = this.initiatedFiles.get(data.url)
-      //    if (_file) {
-      //       file = _file.file
-      //    }
-      // }
       if (file) {
+         //Kad būtų galima keisti tekstą neišsaugojant, reikia atidaryti redaktorių
          vscode.window.showTextDocument(file).then((textEditor: vscode.TextEditor) => {
             textEditor.edit(editBuilder => {
-               var firstLine = textEditor.document.lineAt(0);
-               var lastLine = textEditor.document.lineAt(textEditor.document.lineCount - 1);
-               var textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
+               let firstLine = textEditor.document.lineAt(0);
+               let lastLine = textEditor.document.lineAt(textEditor.document.lineCount - 1);
+               let textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
+               //Pakeičiame visą tekstą su nauju
                editBuilder.replace(textRange, data.content)
 
             })
@@ -181,71 +147,26 @@ export default class QuickDeveloping {
 
    }
 
-   async handleCSSFileModified(data: WS_RESPONSE[MESSAGE_TYPE.CSS_FILE_MODIFIED]) {
+   async handleCSSFileModified(data: MESSAGE_DATA[MESSAGE_TYPE.CSS_FILE_MODIFIED]) {
       try {
-         // const fileUri = await this.loadWorkingFile({
-         //    content: "data.original",
-         //    url: data.url
-         // })
          this.handleFileEdit(data)
       } catch (e) {
          console.error("No file", e)
       }
-
-      // const { fs } = vscode.workspace
-      // if (data.url) {
-
-      //    if (!this.initiatedFiles.has(data.url)) {
-      //       const fileToFind = data.url.split('/').pop()
-      //       const searchResult = await vscode.workspace.findFiles(`**/${fileToFind}`)
-      //       let similarity = 0
-      //       let fileUri = undefined as vscode.Uri | undefined;
-      //       for (let i = 0; i < searchResult.length; i++) {
-      //          const file = searchResult[i]
-      //          const stream = await fs.readFile(file)
-      //          var string = new TextDecoder("utf-8").decode(stream)
-      //          if (string == data.original) {
-      //             this.handleFileEdit(data, file)
-      //             return;
-      //          } else {
-      //             let a = compareTwoStrings(string, data.original)
-      //             if (a > similarity) {
-      //                similarity = a;
-      //                fileUri = file
-      //             }
-      //          }
-      //       }
-      //       if (fileUri) {
-      //          if (similarity == 1) {
-      //             this.handleFileEdit(data, fileUri)
-      //             return
-      //          } else if (similarity > 0.8) {
-      //             //Throw if this is you'r file?
-      //             //or smh
-      //          } else {
-      //             // Strong difference between files!                    
-      //          }
-      //       } else {
-      //          // no matching file
-      //       }
-      //    } else {
-      //       this.handleFileEdit(data)
-      //    }
-      // }
    }
    handleConnection(ws: WebSocket) {
       ws.on('message', this.handleMessage.bind(this));
       ws.send('something');
       this.wsHandler = ws;
    }
-   handleErrorMessageResponse(response: string | undefined) {
+   handleErrorMessageResponse(response?: string) {
       if (response == "Yes") {
          const ws = new WebSocket(`ws://localhost:${this.port}`)
          const token = Math.random().toString(16).split('.').pop()
          ws.on("open", () => ws.send(JSON.stringify({
             type: MESSAGE_TYPE.TERMINATE,
             data: token,
-         } as WS_MESSAGE<MESSAGE_TYPE.TERMINATE>)))
+         } as MESSAGE<MESSAGE_TYPE.TERMINATE>)))
          ws.on("message",
             data => {
                if (data == token) {
@@ -253,17 +174,38 @@ export default class QuickDeveloping {
                   setTimeout(this.connect.bind(this), 100)
                }
             })
+      } else {
+         const ws = new WebSocket(`ws://localhost:${this.port}`)
+         const token = Math.random().toString(16).split('.').pop()
+         const newPort = this.port + 1;
+         ws.on("open", () => ws.send(JSON.stringify({
+            type: MESSAGE_TYPE.SET_PORT_FOR_NEW,
+            data: {
+               token,
+               port: newPort,
+            },
+         } as MESSAGE<MESSAGE_TYPE.SET_PORT_FOR_NEW>)))
+         ws.on("message",
+            message => {
+               const { token, port } = JSON.parse(message.toString()) as MESSAGE_DATA[MESSAGE_TYPE.SET_PORT_FOR_NEW]
+               if (token == token) {
+                  ws.terminate()
+                  this.port = port;
+                  setTimeout(this.connect.bind(this), 100)
+               }
+            })
+
       }
    }
    handleError(error: any) {
       const { code } = error
       if (code === "EADDRINUSE") {
-         let a = [] as string[]
          vscode.window
             .showErrorMessage(`Another Quick Developing session is running!\n
-            Make this main?`, "Yes", "No")
+         Make this main?`, "Yes", "No")
             .then(this.handleErrorMessageResponse.bind(this));
       } else {
+         // this.handleErrorMessageResponse()
          vscode.window.showErrorMessage('Unexpected error!');
       }
    }
@@ -282,7 +224,7 @@ export default class QuickDeveloping {
    }
    disconnect() {
       if (this.ws) {
-         this.wsHandler && this.wsHandler.send("CLOSING")
+         this.wsHandler && this.wsHandler.send(MESSAGE_TYPE.CLOSING)
          this.wsHandler = undefined
          this.ws.close(this.cleanUp.bind(this))
       }
@@ -291,7 +233,7 @@ export default class QuickDeveloping {
       if (err) {
 
       } else {
-         vscode.window.showInformationMessage('Quick Developing session close!');
+         vscode.window.showInformationMessage('Quick Developing session closed!');
       }
    }
 }
